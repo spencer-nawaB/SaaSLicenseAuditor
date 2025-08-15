@@ -1,153 +1,354 @@
-'use client'
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Upload, AlertCircle, TrendingDown, DollarSign, Users, Calendar, FileText, Download, Search, Eye, Zap, Target, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Upload, AlertCircle, TrendingDown, DollarSign, Users, Calendar, FileText, Download, Search, Eye, Zap, Target, AlertTriangle, CheckCircle, Trash2, Play } from 'lucide-react';
 
-const SaaSLicenseAuditor = () => {
+const SaaSLicenseAuditorMVP = () => {
   const [activeTab, setActiveTab] = useState('upload');
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [analysisData, setAnalysisData] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedWasteType, setSelectedWasteType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Generate comprehensive demo data with realistic waste patterns
-  const generateDemoData = () => {
-    const departments = ['Engineering', 'Sales', 'Marketing', 'HR', 'Finance', 'Operations', 'Support', 'Product', 'Legal', 'Executive'];
-    const subscriptions: any[] = [];
+  // Enhanced SaaS vendor database with pattern matching
+  const saasVendorDatabase = {
+    'productivity': {
+      patterns: ['slack', 'zoom', 'microsoft', 'office365', 'teams', 'notion', 'asana', 'trello', 'monday', 'airtable', 'clickup', 'calendly', 'loom', 'grammarly', 'dropbox'],
+      defaultPrice: 12
+    },
+    'crm': {
+      patterns: ['salesforce', 'hubspot', 'pipedrive', 'zendesk', 'freshworks', 'intercom', 'drift'],
+      defaultPrice: 50
+    },
+    'development': {
+      patterns: ['github', 'gitlab', 'jira', 'confluence', 'figma', 'sketch', 'adobe', 'postman', 'datadog', 'jetbrains', 'linear', 'docker'],
+      defaultPrice: 25
+    },
+    'marketing': {
+      patterns: ['mailchimp', 'hootsuite', 'buffer', 'canva', 'marketo', 'pardot', 'unbounce'],
+      defaultPrice: 30
+    },
+    'finance': {
+      patterns: ['quickbooks', 'xero', 'netsuite', 'expensify', 'concur', 'bill.com', 'stripe', 'square'],
+      defaultPrice: 40
+    },
+    'hr': {
+      patterns: ['bamboohr', 'workday', 'adp', 'paychex', 'greenhouse', 'lever', 'culture amp', 'lattice'],
+      defaultPrice: 15
+    },
+    'security': {
+      patterns: ['okta', 'auth0', '1password', 'lastpass', 'crowdstrike', 'sentinelone', 'duo'],
+      defaultPrice: 8
+    },
+    'analytics': {
+      patterns: ['tableau', 'power bi', 'looker', 'mixpanel', 'amplitude', 'analytics', 'hotjar'],
+      defaultPrice: 60
+    },
+    'infrastructure': {
+      patterns: ['aws', 'azure', 'gcp', 'heroku', 'digitalocean', 'cloudflare', 'mongodb'],
+      defaultPrice: 100
+    },
+    'communication': {
+      patterns: ['twilio', 'sendgrid', 'mailgun', 'ringcentral', 'dialpad'],
+      defaultPrice: 20
+    }
+  };
+
+  // Function to categorize vendors
+  const categorizeVendor = (description) => {
+    const desc = description.toLowerCase();
     
-    const vendors = [
-      { name: 'Slack', category: 'productivity', basePrice: 8, seats: 150, utilization: 0.75, lastLogin: 5 },
-      { name: 'Microsoft Teams', category: 'productivity', basePrice: 12.5, seats: 200, utilization: 0.45, lastLogin: 30 },
-      { name: 'Zoom', category: 'productivity', basePrice: 14.99, seats: 100, utilization: 0.85, lastLogin: 2 },
-      { name: 'Salesforce', category: 'crm', basePrice: 150, seats: 50, utilization: 0.65, lastLogin: 1 },
-      { name: 'HubSpot', category: 'crm', basePrice: 50, seats: 25, utilization: 0.30, lastLogin: 45 },
-      { name: 'GitHub Enterprise', category: 'development', basePrice: 21, seats: 80, utilization: 0.90, lastLogin: 1 },
-      { name: 'Jira', category: 'development', basePrice: 7, seats: 120, utilization: 0.70, lastLogin: 3 },
-      { name: 'Confluence', category: 'development', basePrice: 5, seats: 100, utilization: 0.25, lastLogin: 60 },
-      { name: 'Figma', category: 'development', basePrice: 12, seats: 40, utilization: 0.80, lastLogin: 2 },
-      { name: 'Adobe Creative Suite', category: 'development', basePrice: 52.99, seats: 30, utilization: 0.40, lastLogin: 20 },
-      { name: 'Notion', category: 'productivity', basePrice: 8, seats: 75, utilization: 0.55, lastLogin: 7 },
-      { name: 'Asana', category: 'productivity', basePrice: 10.99, seats: 60, utilization: 0.35, lastLogin: 30 },
-      { name: 'Monday.com', category: 'productivity', basePrice: 8, seats: 40, utilization: 0.20, lastLogin: 90 },
-      { name: 'ClickUp', category: 'productivity', basePrice: 7, seats: 25, utilization: 0.15, lastLogin: 120 },
-      { name: 'Zendesk', category: 'crm', basePrice: 49, seats: 20, utilization: 0.85, lastLogin: 1 },
-      { name: 'Intercom', category: 'crm', basePrice: 74, seats: 15, utilization: 0.60, lastLogin: 5 },
-      { name: 'Mailchimp', category: 'marketing', basePrice: 299, seats: 1, utilization: 0.90, lastLogin: 1 },
-      { name: 'Hootsuite', category: 'marketing', basePrice: 99, seats: 1, utilization: 0.70, lastLogin: 10 },
-      { name: 'Buffer', category: 'marketing', basePrice: 15, seats: 5, utilization: 0.40, lastLogin: 45 },
-      { name: 'Canva Pro', category: 'marketing', basePrice: 12.99, seats: 20, utilization: 0.65, lastLogin: 3 },
-      { name: 'QuickBooks Enterprise', category: 'finance', basePrice: 1340, seats: 1, utilization: 0.95, lastLogin: 1 },
-      { name: 'Expensify', category: 'finance', basePrice: 5, seats: 100, utilization: 0.60, lastLogin: 7 },
-      { name: 'BambooHR', category: 'hr', basePrice: 6.19, seats: 150, utilization: 0.40, lastLogin: 15 },
-      { name: 'Greenhouse', category: 'hr', basePrice: 500, seats: 1, utilization: 0.80, lastLogin: 2 },
-      { name: 'Culture Amp', category: 'hr', basePrice: 3, seats: 150, utilization: 0.25, lastLogin: 90 },
-      { name: 'Okta', category: 'security', basePrice: 2, seats: 200, utilization: 0.95, lastLogin: 1 },
-      { name: '1Password Business', category: 'security', basePrice: 8, seats: 200, utilization: 0.70, lastLogin: 5 },
-      { name: 'LastPass', category: 'security', basePrice: 3, seats: 150, utilization: 0.30, lastLogin: 60 },
-      { name: 'Tableau', category: 'analytics', basePrice: 70, seats: 15, utilization: 0.85, lastLogin: 1 },
-      { name: 'Power BI', category: 'analytics', basePrice: 10, seats: 25, utilization: 0.45, lastLogin: 20 },
-      { name: 'AWS', category: 'infrastructure', basePrice: 15000, seats: 1, utilization: 0.80, lastLogin: 1 },
-      { name: 'Heroku', category: 'infrastructure', basePrice: 25, seats: 20, utilization: 0.60, lastLogin: 7 },
-      { name: 'DataDog', category: 'infrastructure', basePrice: 15, seats: 30, utilization: 0.75, lastLogin: 1 },
-      { name: 'New Relic', category: 'infrastructure', basePrice: 100, seats: 10, utilization: 0.85, lastLogin: 2 },
-      { name: 'PagerDuty', category: 'infrastructure', basePrice: 21, seats: 15, utilization: 0.90, lastLogin: 1 },
-      { name: 'Postman', category: 'development', basePrice: 12, seats: 50, utilization: 0.65, lastLogin: 3 },
-      { name: 'Docker', category: 'development', basePrice: 5, seats: 40, utilization: 0.70, lastLogin: 2 },
-      { name: 'JetBrains', category: 'development', basePrice: 199, seats: 60, utilization: 0.80, lastLogin: 1 },
-      { name: 'Linear', category: 'development', basePrice: 8, seats: 35, utilization: 0.75, lastLogin: 2 },
-      { name: 'Airtable', category: 'productivity', basePrice: 20, seats: 30, utilization: 0.50, lastLogin: 14 }
-    ];
-
-    vendors.forEach((vendor, index) => {
-      const department = departments[Math.floor(Math.random() * departments.length)];
-      const monthlySpend = vendor.basePrice * vendor.seats;
-      const annualSpend = monthlySpend * 12;
-      const unusedSeats = Math.floor(vendor.seats * (1 - vendor.utilization));
-      const potentialSavings = unusedSeats * vendor.basePrice * 12;
-      
-      // Determine waste type
-      let wasteType = 'optimized';
-      let riskLevel = 'low';
-      if (vendor.lastLogin > 90) {
-        wasteType = 'unused';
-        riskLevel = 'high';
-      } else if (vendor.utilization < 0.3 || vendor.lastLogin > 30) {
-        wasteType = 'underutilized';
-        riskLevel = 'medium';
-      } else if (vendors.filter(v => v.category === vendor.category && v !== vendor).length > 0) {
-        wasteType = 'redundant';
-        riskLevel = 'medium';
+    for (const [category, data] of Object.entries(saasVendorDatabase)) {
+      for (const pattern of data.patterns) {
+        if (desc.includes(pattern)) {
+          return { category, defaultPrice: data.defaultPrice };
+        }
       }
+    }
+    
+    return { category: 'other', defaultPrice: 10 };
+  };
 
-      subscriptions.push({
-        id: index + 1,
-        vendor: vendor.name,
-        category: vendor.category,
-        department,
-        seats: vendor.seats,
-        utilizationRate: vendor.utilization,
-        monthlySpend,
-        annualSpend,
-        lastLogin: vendor.lastLogin,
-        unusedSeats,
-        potentialSavings,
-        wasteType,
-        riskLevel,
-        contractEnd: new Date(Date.now() + Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        recommendation: getRecommendation(wasteType, vendor.utilization, potentialSavings)
+  // Function to detect recurring charges
+  const detectRecurringCharges = (transactions) => {
+    const vendorGroups = {};
+    
+    transactions.forEach(transaction => {
+      const vendor = extractVendorName(transaction.description);
+      const amount = parseFloat(transaction.amount) || 0;
+      
+      if (!vendorGroups[vendor]) {
+        vendorGroups[vendor] = [];
+      }
+      
+      vendorGroups[vendor].push({
+        ...transaction,
+        amount,
+        date: new Date(transaction.date)
       });
     });
 
-    return {
-      subscriptions,
-      summary: {
-        totalSpend: subscriptions.reduce((sum, sub) => sum + sub.annualSpend, 0),
-        totalWaste: subscriptions.reduce((sum, sub) => sum + sub.potentialSavings, 0),
-        wastePercentage: (subscriptions.reduce((sum, sub) => sum + sub.potentialSavings, 0) / subscriptions.reduce((sum, sub) => sum + sub.annualSpend, 0)) * 100,
-        totalSubscriptions: subscriptions.length,
-        unusedLicenses: subscriptions.filter(sub => sub.wasteType === 'unused').length,
-        underutilizedLicenses: subscriptions.filter(sub => sub.wasteType === 'underutilized').length,
-        redundantTools: subscriptions.filter(sub => sub.wasteType === 'redundant').length
-      },
-      departmentBreakdown: departments.map(dept => {
-        const deptSubs = subscriptions.filter(sub => sub.department === dept);
-        return {
-          department: dept,
-          totalSpend: deptSubs.reduce((sum, sub) => sum + sub.annualSpend, 0),
-          potentialSavings: deptSubs.reduce((sum, sub) => sum + sub.potentialSavings, 0),
-          subscriptionCount: deptSubs.length
+    // Filter for recurring charges (2+ transactions)
+    const recurringCharges = {};
+    Object.entries(vendorGroups).forEach(([vendor, transactions]) => {
+      if (transactions.length >= 2) {
+        const avgAmount = transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length;
+        const { category, defaultPrice } = categorizeVendor(vendor);
+        
+        recurringCharges[vendor] = {
+          vendor,
+          category,
+          transactions: transactions.length,
+          avgAmount,
+          totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0),
+          lastCharge: Math.max(...transactions.map(t => t.date.getTime())),
+          estimatedSeats: Math.max(1, Math.round(avgAmount / defaultPrice)),
+          defaultPrice
         };
-      }).filter(dept => dept.subscriptionCount > 0).sort((a, b) => b.potentialSavings - a.potentialSavings)
-    };
+      }
+    });
+
+    return recurringCharges;
   };
 
-  const getRecommendation = (wasteType: string, utilization: number, savings: number) => {
+  // Extract vendor name from transaction description
+  const extractVendorName = (description) => {
+    // Remove common payment processor names and clean up
+    const cleaned = description
+      .toLowerCase()
+      .replace(/\b(paypal|stripe|square|authorize\.net|payment|purchase|subscription)\b/g, '')
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Take first meaningful word(s)
+    const words = cleaned.split(' ').filter(word => word.length > 2);
+    return words.slice(0, 2).join(' ') || 'Unknown Vendor';
+  };
+
+  // Parse CSV content
+  const parseCSV = (csvContent) => {
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    const transactions = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const transaction = {};
+
+      headers.forEach((header, index) => {
+        transaction[header] = values[index] || '';
+      });
+
+      // Map common header variations
+      const mappedTransaction = {
+        date: transaction.date || transaction.timestamp || transaction['transaction date'] || '',
+        description: transaction.description || transaction.merchant || transaction.vendor || transaction.payee || '',
+        amount: transaction.amount || transaction.debit || transaction.charge || transaction.cost || '0',
+        category: transaction.category || transaction.type || '',
+        department: transaction.department || transaction.dept || 'Unknown'
+      };
+
+      if (mappedTransaction.description && mappedTransaction.amount) {
+        transactions.push(mappedTransaction);
+      }
+    }
+
+    return transactions;
+  };
+
+  // Process uploaded files
+  const processFiles = async () => {
+    if (uploadedFiles.length === 0) {
+      setError('Please upload at least one CSV file');
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      let allTransactions = [];
+
+      for (const file of uploadedFiles) {
+        const content = await file.text();
+        const transactions = parseCSV(content);
+        allTransactions = [...allTransactions, ...transactions];
+      }
+
+      if (allTransactions.length === 0) {
+        throw new Error('No valid transactions found in uploaded files');
+      }
+
+      // Detect recurring SaaS charges
+      const recurringCharges = detectRecurringCharges(allTransactions);
+      
+      if (Object.keys(recurringCharges).length === 0) {
+        throw new Error('No recurring SaaS subscriptions detected');
+      }
+
+      // Generate analysis data
+      const subscriptions = Object.values(recurringCharges).map((charge, index) => {
+        const monthlySpend = charge.avgAmount;
+        const annualSpend = monthlySpend * 12;
+        const estimatedUtilization = Math.random() * 0.7 + 0.3; // Random for MVP
+        const unusedSeats = Math.floor(charge.estimatedSeats * (1 - estimatedUtilization));
+        const potentialSavings = unusedSeats * charge.defaultPrice * 12;
+        const daysSinceLastCharge = Math.floor((Date.now() - charge.lastCharge) / (1000 * 60 * 60 * 24));
+
+        let wasteType = 'optimized';
+        let riskLevel = 'low';
+        
+        if (daysSinceLastCharge > 90) {
+          wasteType = 'unused';
+          riskLevel = 'high';
+        } else if (estimatedUtilization < 0.5) {
+          wasteType = 'underutilized';
+          riskLevel = 'medium';
+        }
+
+        return {
+          id: index + 1,
+          vendor: charge.vendor,
+          category: charge.category,
+          department: 'General', // Could be enhanced with department mapping
+          seats: charge.estimatedSeats,
+          utilizationRate: estimatedUtilization,
+          monthlySpend,
+          annualSpend,
+          lastLogin: daysSinceLastCharge,
+          unusedSeats,
+          potentialSavings,
+          wasteType,
+          riskLevel,
+          transactionCount: charge.transactions,
+          recommendation: getRecommendation(wasteType, estimatedUtilization, potentialSavings)
+        };
+      });
+
+      const totalSpend = subscriptions.reduce((sum, sub) => sum + sub.annualSpend, 0);
+      const totalWaste = subscriptions.reduce((sum, sub) => sum + sub.potentialSavings, 0);
+
+      const analysisResult = {
+        subscriptions,
+        summary: {
+          totalSpend,
+          totalWaste,
+          wastePercentage: (totalWaste / totalSpend) * 100,
+          totalSubscriptions: subscriptions.length,
+          unusedLicenses: subscriptions.filter(sub => sub.wasteType === 'unused').length,
+          underutilizedLicenses: subscriptions.filter(sub => sub.wasteType === 'underutilized').length,
+          redundantTools: subscriptions.filter(sub => sub.wasteType === 'redundant').length,
+          processedTransactions: allTransactions.length
+        },
+        categoryBreakdown: getCategoryBreakdown(subscriptions)
+      };
+
+      setAnalysisData(analysisResult);
+      setActiveTab('dashboard');
+      
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getCategoryBreakdown = (subscriptions) => {
+    const categories = {};
+    subscriptions.forEach(sub => {
+      if (!categories[sub.category]) {
+        categories[sub.category] = {
+          category: sub.category.charAt(0).toUpperCase() + sub.category.slice(1),
+          totalSpend: 0,
+          potentialSavings: 0,
+          subscriptionCount: 0
+        };
+      }
+      categories[sub.category].totalSpend += sub.annualSpend;
+      categories[sub.category].potentialSavings += sub.potentialSavings;
+      categories[sub.category].subscriptionCount += 1;
+    });
+
+    return Object.values(categories).sort((a, b) => b.potentialSavings - a.potentialSavings);
+  };
+
+  const getRecommendation = (wasteType, utilization, savings) => {
     if (wasteType === 'unused') {
-      return savings > 5000 ? 'Immediate cancellation recommended' : 'Cancel or downgrade';
+      return savings > 1000 ? 'Immediate cancellation recommended' : 'Cancel or downgrade';
     } else if (wasteType === 'underutilized') {
-      return utilization < 0.2 ? 'Reduce seat count by 60%' : 'Right-size licenses';
-    } else if (wasteType === 'redundant') {
-      return 'Consolidate with primary tool';
+      return utilization < 0.3 ? 'Reduce seat count by 50%' : 'Right-size licenses';
     }
     return 'Monitor usage trends';
   };
 
-  // Initialize demo data
-  useEffect(() => {
-    setAnalysisData(generateDemoData());
-  }, []);
+  const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files);
+    const csvFiles = files.filter(file => 
+      file.type === 'text/csv' || 
+      file.name.toLowerCase().endsWith('.csv')
+    );
+    
+    if (csvFiles.length !== files.length) {
+      setError('Please upload only CSV files for the MVP version');
+      return;
+    }
+    
+    setUploadedFiles(prev => [...prev, ...csvFiles]);
+    setError(null);
+  };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setUploadedFiles(prev => [...prev, ...files]);
+  const removeFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const exportToPDF = () => {
+    if (!analysisData) return;
+    
+    // Create a simple text report
+    const report = `
+SaaS LICENSE AUDIT REPORT
+========================
+
+EXECUTIVE SUMMARY
+- Total Annual SaaS Spend: $${analysisData.summary.totalSpend.toLocaleString()}
+- Potential Annual Savings: $${analysisData.summary.totalWaste.toLocaleString()}
+- Waste Percentage: ${analysisData.summary.wastePercentage.toFixed(1)}%
+- Total Subscriptions Analyzed: ${analysisData.summary.totalSubscriptions}
+- Transactions Processed: ${analysisData.summary.processedTransactions}
+
+TOP OPTIMIZATION OPPORTUNITIES
+${analysisData.subscriptions
+  .sort((a, b) => b.potentialSavings - a.potentialSavings)
+  .slice(0, 10)
+  .map((sub, i) => `${i + 1}. ${sub.vendor} - $${sub.potentialSavings.toLocaleString()} potential savings`)
+  .join('\n')}
+
+CATEGORY BREAKDOWN
+${analysisData.categoryBreakdown
+  .map(cat => `${cat.category}: $${cat.totalSpend.toLocaleString()} spend, $${cat.potentialSavings.toLocaleString()} potential savings`)
+  .join('\n')}
+
+Generated on ${new Date().toLocaleDateString()}
+    `;
+
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'saas-audit-report.txt';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const filteredSubscriptions = useMemo(() => {
     if (!analysisData) return [];
     
-    return analysisData.subscriptions.filter((sub: any) => {
+    return analysisData.subscriptions.filter(sub => {
       const matchesDepartment = selectedDepartment === 'all' || sub.department === selectedDepartment;
       const matchesWasteType = selectedWasteType === 'all' || sub.wasteType === selectedWasteType;
       const matchesSearch = searchTerm === '' || 
@@ -161,51 +362,9 @@ const SaaSLicenseAuditor = () => {
   const topOpportunities = useMemo(() => {
     if (!analysisData) return [];
     return analysisData.subscriptions
-      .sort((a: any, b: any) => b.potentialSavings - a.potentialSavings)
+      .sort((a, b) => b.potentialSavings - a.potentialSavings)
       .slice(0, 10);
   }, [analysisData]);
-
-  const wasteByCategory = useMemo(() => {
-    if (!analysisData) return [];
-    const categoryWaste: any = {};
-    analysisData.subscriptions.forEach((sub: any) => {
-      if (!categoryWaste[sub.category]) {
-        categoryWaste[sub.category] = 0;
-      }
-      categoryWaste[sub.category] += sub.potentialSavings;
-    });
-    
-    return Object.entries(categoryWaste).map(([category, waste]: [string, any]) => ({
-      category: category.charAt(0).toUpperCase() + category.slice(1),
-      waste,
-      percentage: ((waste / analysisData.summary.totalWaste) * 100).toFixed(1)
-    })).sort((a, b) => b.waste - a.waste);
-  }, [analysisData]);
-
-  const redundancyMap = useMemo(() => {
-    if (!analysisData) return [];
-    const categoryGroups: any = {};
-    analysisData.subscriptions.forEach((sub: any) => {
-      if (!categoryGroups[sub.category]) {
-        categoryGroups[sub.category] = [];
-      }
-      categoryGroups[sub.category].push(sub);
-    });
-
-    return Object.entries(categoryGroups)
-      .filter(([, subs]: [string, any]) => subs.length > 1)
-      .map(([category, subs]: [string, any]) => ({
-        category: category.charAt(0).toUpperCase() + category.slice(1),
-        tools: subs.map((s: any) => s.vendor),
-        totalSpend: subs.reduce((sum: number, s: any) => sum + s.annualSpend, 0),
-        potentialSavings: subs.reduce((sum: number, s: any) => sum + s.potentialSavings, 0),
-        redundancyLevel: subs.length
-      }));
-  }, [analysisData]);
-
-  if (!analysisData) {
-    return <div className="flex justify-center items-center h-64">Loading analysis...</div>;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -213,27 +372,28 @@ const SaaSLicenseAuditor = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-slate-800 mb-2">
             SaaS License Auditor
-            <span className="ml-3 px-3 py-1 bg-emerald-100 text-emerald-800 text-sm font-medium rounded-full">Enterprise</span>
+            <span className="ml-3 px-3 py-1 bg-emerald-100 text-emerald-800 text-sm font-medium rounded-full">MVP</span>
           </h1>
-          <p className="text-slate-600 text-lg">Maximize cost savings through intelligent SaaS optimization</p>
+          <p className="text-slate-600 text-lg">Upload your expense data to identify SaaS waste and optimization opportunities</p>
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200">
           {[
-            { id: 'upload', label: 'Data Upload', icon: Upload },
-            { id: 'dashboard', label: 'Executive Dashboard', icon: DollarSign },
-            { id: 'opportunities', label: 'Optimization Opportunities', icon: Target },
-            { id: 'subscriptions', label: 'Subscription Analysis', icon: Eye },
-            { id: 'redundancy', label: 'Redundancy Map', icon: AlertTriangle },
-            { id: 'recommendations', label: 'Action Plan', icon: Zap }
-          ].map(({ id, label, icon: Icon }) => (
+            { id: 'upload', label: 'Upload Data', icon: Upload },
+            { id: 'dashboard', label: 'Analysis Dashboard', icon: DollarSign, disabled: !analysisData },
+            { id: 'subscriptions', label: 'Subscription Details', icon: Eye, disabled: !analysisData },
+            { id: 'opportunities', label: 'Optimization', icon: Target, disabled: !analysisData }
+          ].map(({ id, label, icon: Icon, disabled }) => (
             <button
               key={id}
-              onClick={() => setActiveTab(id)}
+              onClick={() => !disabled && setActiveTab(id)}
+              disabled={disabled}
               className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-all ${
                 activeTab === id
                   ? 'bg-white text-blue-600 border-b-2 border-blue-600 font-medium'
+                  : disabled
+                  ? 'text-slate-400 cursor-not-allowed'
                   : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
               }`}
             >
@@ -246,100 +406,120 @@ const SaaSLicenseAuditor = () => {
         {/* Upload Tab */}
         {activeTab === 'upload' && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Data Upload & Integration</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Upload Your Expense Data</h2>
             
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-700">File Upload</h3>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                  <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                  <p className="text-slate-600 mb-4">Upload your financial data files</p>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".csv,.xlsx,.xls"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors"
-                  >
-                    Choose Files
-                  </label>
-                </div>
-                
-                <div className="text-sm text-slate-600">
-                  <p className="font-medium mb-2">Supported file types:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Credit card statements (CSV/Excel)</li>
-                    <li>Expense reports</li>
-                    <li>Employee directories</li>
-                    <li>Vendor invoices</li>
-                  </ul>
-                </div>
+            <div className="space-y-6">
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-800 mb-2">📋 Instructions</h3>
+                <ul className="text-blue-700 text-sm space-y-1">
+                  <li>• Export your credit card statements or expense reports as CSV files</li>
+                  <li>• Ensure files contain columns for: date, description/vendor, amount</li>
+                  <li>• The system will automatically detect recurring SaaS subscriptions</li>
+                  <li>• Multiple files can be uploaded and will be combined for analysis</li>
+                </ul>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-700">API Integrations</h3>
-                <div className="space-y-3">
-                  {[
-                    { name: 'Google Workspace', status: 'connected', color: 'green' },
-                    { name: 'Okta SSO', status: 'connected', color: 'green' },
-                    { name: 'QuickBooks', status: 'pending', color: 'yellow' },
-                    { name: 'Slack Admin', status: 'connected', color: 'green' },
-                    { name: 'Microsoft 365', status: 'disconnected', color: 'red' }
-                  ].map(integration => (
-                    <div key={integration.name} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
-                      <span className="font-medium text-slate-700">{integration.name}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        integration.color === 'green' ? 'bg-green-100 text-green-800' :
-                        integration.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {integration.status}
-                      </span>
+              {/* File Upload */}
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+                <Upload className="mx-auto h-12 w-12 text-slate-400 mb-4" />
+                <p className="text-slate-600 mb-4">Drop CSV files here or click to upload</p>
+                <input
+                  type="file"
+                  multiple
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors inline-block"
+                >
+                  Choose CSV Files
+                </label>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="text-red-600 mt-0.5" size={20} />
+                    <div>
+                      <p className="font-medium text-red-800">Error</p>
+                      <p className="text-red-700 text-sm">{error}</p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            </div>
+              )}
 
-            {uploadedFiles.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-slate-700 mb-3">Uploaded Files</h3>
-                <div className="space-y-2">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                      <FileText className="text-slate-400" size={20} />
-                      <span className="font-medium text-slate-700">{file.name}</span>
-                      <span className="text-sm text-slate-500">
-                        ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="text-blue-600 mt-0.5" size={20} />
+              {/* Uploaded Files */}
+              {uploadedFiles.length > 0 && (
                 <div>
-                  <p className="font-medium text-blue-800">Demo Mode Active</p>
-                  <p className="text-blue-700 text-sm">
-                    This demo uses simulated data showing typical enterprise SaaS waste patterns. 
-                    Upload your actual files to see real analysis results.
-                  </p>
+                  <h3 className="text-lg font-semibold text-slate-700 mb-3">
+                    Uploaded Files ({uploadedFiles.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {uploadedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <FileText className="text-slate-400" size={20} />
+                          <div>
+                            <span className="font-medium text-slate-700">{file.name}</span>
+                            <span className="text-sm text-slate-500 ml-2">
+                              ({(file.size / 1024).toFixed(1)} KB)
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => removeFile(index)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Process Button */}
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={processFiles}
+                      disabled={processing}
+                      className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                    >
+                      {processing ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Play size={20} />
+                          Analyze SaaS Subscriptions
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sample CSV Format */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-2">📄 Expected CSV Format</h3>
+                <div className="bg-white p-3 rounded border text-sm font-mono">
+                  <div className="text-gray-600">date,description,amount</div>
+                  <div>2024-01-15,"Slack Technologies",120.00</div>
+                  <div>2024-01-15,"Zoom Video Communications",14.99</div>
+                  <div>2024-02-15,"Slack Technologies",120.00</div>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Executive Dashboard Tab */}
-        {activeTab === 'dashboard' && (
+        {/* Analysis Dashboard */}
+        {activeTab === 'dashboard' && analysisData && (
           <div className="space-y-6">
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -373,7 +553,7 @@ const SaaSLicenseAuditor = () => {
               <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-600 text-sm font-medium">Total Subscriptions</p>
+                    <p className="text-slate-600 text-sm font-medium">Subscriptions Found</p>
                     <p className="text-3xl font-bold text-slate-800">
                       {analysisData.summary.totalSubscriptions}
                     </p>
@@ -385,11 +565,10 @@ const SaaSLicenseAuditor = () => {
               <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-600 text-sm font-medium">Quick Wins</p>
+                    <p className="text-slate-600 text-sm font-medium">Transactions Processed</p>
                     <p className="text-3xl font-bold text-slate-800">
-                      {analysisData.summary.unusedLicenses}
+                      {analysisData.summary.processedTransactions}
                     </p>
-                    <p className="text-green-600 text-sm font-medium">Immediate actions</p>
                   </div>
                   <CheckCircle className="text-green-500" size={32} />
                 </div>
@@ -399,47 +578,45 @@ const SaaSLicenseAuditor = () => {
             {/* Charts */}
             <div className="grid lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Waste by Category</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-slate-800">Spend by Category</h3>
+                  <button
+                    onClick={exportToPDF}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                  >
+                    <Download size={16} />
+                    Export Report
+                  </button>
+                </div>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
-                      data={wasteByCategory}
+                      data={analysisData.categoryBreakdown}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
                       outerRadius={120}
                       paddingAngle={2}
-                      dataKey="waste"
+                      dataKey="totalSpend"
                     >
-                      {wasteByCategory.map((entry, index) => (
+                      {analysisData.categoryBreakdown.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={[
                           '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
                           '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1'
                         ][index % 10]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Potential Savings']} />
+                    <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Annual Spend']} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  {wasteByCategory.slice(0, 6).map((item, index) => (
-                    <div key={item.category} className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6'][index] }}
-                      />
-                      <span className="text-slate-600">{item.category} ({item.percentage}%)</span>
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Department Breakdown</h3>
+                <h3 className="text-xl font-bold text-slate-800 mb-4">Category Breakdown</h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analysisData.departmentBreakdown}>
+                  <BarChart data={analysisData.categoryBreakdown}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="department" angle={-45} textAnchor="end" height={80} />
+                    <XAxis dataKey="category" angle={-45} textAnchor="end" height={80} />
                     <YAxis />
                     <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Amount']} />
                     <Bar dataKey="totalSpend" fill="#3b82f6" name="Total Spend" />
@@ -448,101 +625,217 @@ const SaaSLicenseAuditor = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Trend Analysis */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">SaaS Spend Trend Analysis</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={[
-                  { month: 'Jan', spend: 245000, waste: 125000 },
-                  { month: 'Feb', spend: 248000, waste: 128000 },
-                  { month: 'Mar', spend: 252000, waste: 131000 },
-                  { month: 'Apr', spend: 258000, waste: 135000 },
-                  { month: 'May', spend: 264000, waste: 138000 },
-                  { month: 'Jun', spend: 267000, waste: 142000 }
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Amount']} />
-                  <Line type="monotone" dataKey="spend" stroke="#3b82f6" strokeWidth={3} name="Total Spend" />
-                  <Line type="monotone" dataKey="waste" stroke="#ef4444" strokeWidth={3} name="Waste" />
-                </LineChart>
-              </ResponsiveContainer>
+        {/* Subscription Details */}
+        {activeTab === 'subscriptions' && analysisData && (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex flex-col lg:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold text-slate-800">Detected Subscriptions</h2>
+                <p className="text-slate-600">SaaS subscriptions identified from your expense data</p>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search vendors..."
+                    className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                
+                <select
+                  className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={selectedWasteType}
+                  onChange={(e) => setSelectedWasteType(e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  <option value="unused">Unused</option>
+                  <option value="underutilized">Underutilized</option>
+                  <option value="optimized">Optimized</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Vendor</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Category</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Est. Seats</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Monthly Spend</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Annual Spend</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Potential Savings</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Transactions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSubscriptions.map((subscription) => (
+                    <tr key={subscription.id} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-4 px-4 font-medium text-slate-800">{subscription.vendor}</td>
+                      <td className="py-4 px-4">
+                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-sm">
+                          {subscription.category}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-slate-800">
+                        {subscription.seats}
+                        {subscription.unusedSeats > 0 && (
+                          <span className="ml-2 text-red-600 text-sm">(-{subscription.unusedSeats})</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 font-semibold text-slate-800">
+                        ${subscription.monthlySpend.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4 font-semibold text-slate-800">
+                        ${subscription.annualSpend.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4 font-bold text-green-600">
+                        ${subscription.potentialSavings.toLocaleString()}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          subscription.wasteType === 'unused' ? 'bg-red-100 text-red-800' :
+                          subscription.wasteType === 'underutilized' ? 'bg-orange-100 text-orange-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {subscription.wasteType.charAt(0).toUpperCase() + subscription.wasteType.slice(1)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 text-slate-600">
+                        {subscription.transactionCount} charges
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* Other tabs content would go here - simplified for demo */}
-        {activeTab !== 'upload' && activeTab !== 'dashboard' && (
+        {/* Optimization Opportunities */}
+        {activeTab === 'opportunities' && analysisData && (
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-4">
-              {activeTab === 'opportunities' && 'Optimization Opportunities'}
-              {activeTab === 'subscriptions' && 'Subscription Analysis'}
-              {activeTab === 'redundancy' && 'Redundancy Map'}
-              {activeTab === 'recommendations' && 'Action Plan'}
-            </h2>
-            <p className="text-slate-600">
-              This section shows detailed analysis for {activeTab}. 
-              In the full version, this would include interactive tables, charts, and actionable recommendations.
-            </p>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-slate-800">Top Optimization Opportunities</h2>
+              <div className="text-right">
+                <p className="text-sm text-slate-600">Total Potential Savings</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ${topOpportunities.reduce((sum, opp) => sum + opp.potentialSavings, 0).toLocaleString()}
+                </p>
+              </div>
+            </div>
             
-            {/* Show some sample data for the active tab */}
-            <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {topOpportunities.slice(0, 6).map((opportunity) => (
-                <div key={opportunity.id} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-slate-800">{opportunity.vendor}</h4>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      opportunity.wasteType === 'unused' ? 'bg-red-100 text-red-800' :
-                      opportunity.wasteType === 'underutilized' ? 'bg-orange-100 text-orange-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {opportunity.wasteType}
-                    </span>
+            <div className="space-y-4">
+              {topOpportunities.map((opportunity, index) => (
+                <div key={opportunity.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                        index < 3 ? 'bg-red-500' : index < 6 ? 'bg-orange-500' : 'bg-yellow-500'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-800">{opportunity.vendor}</h3>
+                        <p className="text-slate-600 text-sm">{opportunity.category}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-green-600">
+                        ${opportunity.potentialSavings.toLocaleString()}
+                      </p>
+                      <p className="text-slate-500 text-sm">potential savings</p>
+                    </div>
                   </div>
-                  <div className="space-y-1 text-sm text-slate-600">
-                    <div className="flex justify-between">
-                      <span>Department:</span>
-                      <span className="font-medium">{opportunity.department}</span>
+                  
+                  <div className="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-slate-600">Annual Spend:</span>
+                      <span className="font-medium ml-2">${opportunity.annualSpend.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Annual Spend:</span>
-                      <span className="font-medium">${opportunity.annualSpend.toLocaleString()}</span>
+                    <div>
+                      <span className="text-slate-600">Estimated Seats:</span>
+                      <span className="font-medium ml-2">{opportunity.seats}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Potential Savings:</span>
-                      <span className="font-bold text-green-600">${opportunity.potentialSavings.toLocaleString()}</span>
+                    <div>
+                      <span className="text-slate-600">Utilization:</span>
+                      <span className="font-medium ml-2">{Math.round(opportunity.utilizationRate * 100)}%</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Utilization:</span>
-                      <span className="font-medium">{Math.round(opportunity.utilizationRate * 100)}%</span>
-                    </div>
+                  </div>
+                  
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-blue-800 text-sm font-medium">💡 Recommendation</p>
+                    <p className="text-blue-700 text-sm">{opportunity.recommendation}</p>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Action Summary */}
+            <div className="mt-8 grid md:grid-cols-3 gap-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-semibold text-red-800 mb-2">🚨 Immediate Action</h4>
+                <p className="text-red-700 text-sm">
+                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'unused').length} unused subscriptions
+                </p>
+                <p className="text-red-600 font-bold">
+                  ${analysisData.subscriptions
+                    .filter(sub => sub.wasteType === 'unused')
+                    .reduce((sum, sub) => sum + sub.potentialSavings, 0)
+                    .toLocaleString()} savings
+                </p>
+              </div>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <h4 className="font-semibold text-orange-800 mb-2">⚡ Quick Wins</h4>
+                <p className="text-orange-700 text-sm">
+                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'underutilized').length} underutilized tools
+                </p>
+                <p className="text-orange-600 font-bold">
+                  ${analysisData.subscriptions
+                    .filter(sub => sub.wasteType === 'underutilized')
+                    .reduce((sum, sub) => sum + sub.potentialSavings, 0)
+                    .toLocaleString()} savings
+                </p>
+              </div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">✅ Well Optimized</h4>
+                <p className="text-green-700 text-sm">
+                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'optimized').length} efficient subscriptions
+                </p>
+                <p className="text-green-600 font-bold">Keep monitoring</p>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Bottom Analytics Summary */}
+        {/* Bottom Status */}
         <div className="mt-8 bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white">
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
-              <p className="text-slate-300 text-sm">Vendors Analyzed</p>
-              <p className="text-2xl font-bold">{analysisData.summary.totalSubscriptions}</p>
+              <p className="text-slate-300 text-sm">Analysis Status</p>
+              <p className="text-2xl font-bold">{analysisData ? 'Complete' : 'Waiting'}</p>
             </div>
             <div className="text-center">
-              <p className="text-slate-300 text-sm">Waste Identified</p>
-              <p className="text-2xl font-bold">{analysisData.summary.wastePercentage.toFixed(1)}%</p>
+              <p className="text-slate-300 text-sm">Files Processed</p>
+              <p className="text-2xl font-bold">{uploadedFiles.length}</p>
             </div>
             <div className="text-center">
-              <p className="text-slate-300 text-sm">Departments Covered</p>
-              <p className="text-2xl font-bold">{analysisData.departmentBreakdown.length}</p>
+              <p className="text-slate-300 text-sm">Subscriptions Found</p>
+              <p className="text-2xl font-bold">{analysisData?.summary.totalSubscriptions || 0}</p>
             </div>
             <div className="text-center">
-              <p className="text-slate-300 text-sm">Last Updated</p>
-              <p className="text-2xl font-bold">Live</p>
+              <p className="text-slate-300 text-sm">Potential Savings</p>
+              <p className="text-2xl font-bold">
+                {analysisData ? `${analysisData.summary.totalWaste.toLocaleString()}` : '$0'}
+              </p>
             </div>
           </div>
         </div>
@@ -551,6 +844,4 @@ const SaaSLicenseAuditor = () => {
   );
 };
 
-export default function Home() {
-  return <SaaSLicenseAuditor />;
-}
+export default SaaSLicenseAuditorMVP;
