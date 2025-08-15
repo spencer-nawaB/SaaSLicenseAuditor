@@ -1,16 +1,18 @@
+'use client'
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Upload, AlertCircle, TrendingDown, DollarSign, Users, Calendar, FileText, Download, Search, Eye, Zap, Target, AlertTriangle, CheckCircle, Trash2, Play } from 'lucide-react';
 
 const SaaSLicenseAuditorMVP = () => {
   const [activeTab, setActiveTab] = useState('upload');
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [analysisData, setAnalysisData] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [analysisData, setAnalysisData] = useState<any>(null);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedWasteType, setSelectedWasteType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Enhanced SaaS vendor database with pattern matching
   const saasVendorDatabase = {
@@ -57,7 +59,7 @@ const SaaSLicenseAuditorMVP = () => {
   };
 
   // Function to categorize vendors
-  const categorizeVendor = (description) => {
+  const categorizeVendor = (description: string) => {
     const desc = description.toLowerCase();
     
     for (const [category, data] of Object.entries(saasVendorDatabase)) {
@@ -72,8 +74,8 @@ const SaaSLicenseAuditorMVP = () => {
   };
 
   // Function to detect recurring charges
-  const detectRecurringCharges = (transactions) => {
-    const vendorGroups = {};
+  const detectRecurringCharges = (transactions: any[]) => {
+    const vendorGroups: any = {};
     
     transactions.forEach(transaction => {
       const vendor = extractVendorName(transaction.description);
@@ -91,10 +93,10 @@ const SaaSLicenseAuditorMVP = () => {
     });
 
     // Filter for recurring charges (2+ transactions)
-    const recurringCharges = {};
-    Object.entries(vendorGroups).forEach(([vendor, transactions]) => {
+    const recurringCharges: any = {};
+    Object.entries(vendorGroups).forEach(([vendor, transactions]: [string, any]) => {
       if (transactions.length >= 2) {
-        const avgAmount = transactions.reduce((sum, t) => sum + t.amount, 0) / transactions.length;
+        const avgAmount = transactions.reduce((sum: number, t: any) => sum + t.amount, 0) / transactions.length;
         const { category, defaultPrice } = categorizeVendor(vendor);
         
         recurringCharges[vendor] = {
@@ -102,8 +104,8 @@ const SaaSLicenseAuditorMVP = () => {
           category,
           transactions: transactions.length,
           avgAmount,
-          totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0),
-          lastCharge: Math.max(...transactions.map(t => t.date.getTime())),
+          totalAmount: transactions.reduce((sum: number, t: any) => sum + t.amount, 0),
+          lastCharge: Math.max(...transactions.map((t: any) => t.date.getTime())),
           estimatedSeats: Math.max(1, Math.round(avgAmount / defaultPrice)),
           defaultPrice
         };
@@ -114,7 +116,7 @@ const SaaSLicenseAuditorMVP = () => {
   };
 
   // Extract vendor name from transaction description
-  const extractVendorName = (description) => {
+  const extractVendorName = (description: string) => {
     // Remove common payment processor names and clean up
     const cleaned = description
       .toLowerCase()
@@ -129,7 +131,7 @@ const SaaSLicenseAuditorMVP = () => {
   };
 
   // Parse CSV content
-  const parseCSV = (csvContent) => {
+  const parseCSV = (csvContent: string) => {
     const lines = csvContent.split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
@@ -138,7 +140,7 @@ const SaaSLicenseAuditorMVP = () => {
 
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
-      const transaction = {};
+      const transaction: any = {};
 
       headers.forEach((header, index) => {
         transaction[header] = values[index] || '';
@@ -146,7 +148,7 @@ const SaaSLicenseAuditorMVP = () => {
 
       // Map common header variations
       const mappedTransaction = {
-        date: transaction.date || transaction.timestamp || transaction['transaction date'] || '',
+        date: transaction.date || transaction.timestamp || transaction['transaction date'] || transaction.transaction_date || '',
         description: transaction.description || transaction.merchant || transaction.vendor || transaction.payee || '',
         amount: transaction.amount || transaction.debit || transaction.charge || transaction.cost || '0',
         category: transaction.category || transaction.type || '',
@@ -172,7 +174,7 @@ const SaaSLicenseAuditorMVP = () => {
     setError(null);
 
     try {
-      let allTransactions = [];
+      let allTransactions: any[] = [];
 
       for (const file of uploadedFiles) {
         const content = await file.text();
@@ -188,11 +190,11 @@ const SaaSLicenseAuditorMVP = () => {
       const recurringCharges = detectRecurringCharges(allTransactions);
       
       if (Object.keys(recurringCharges).length === 0) {
-        throw new Error('No recurring SaaS subscriptions detected');
+        throw new Error('No recurring SaaS subscriptions detected. Please ensure your CSV contains recurring software charges.');
       }
 
       // Generate analysis data
-      const subscriptions = Object.values(recurringCharges).map((charge, index) => {
+      const subscriptions = Object.values(recurringCharges).map((charge: any, index) => {
         const monthlySpend = charge.avgAmount;
         const annualSpend = monthlySpend * 12;
         const estimatedUtilization = Math.random() * 0.7 + 0.3; // Random for MVP
@@ -251,15 +253,15 @@ const SaaSLicenseAuditorMVP = () => {
       setAnalysisData(analysisResult);
       setActiveTab('dashboard');
       
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setProcessing(false);
     }
   };
 
-  const getCategoryBreakdown = (subscriptions) => {
-    const categories = {};
+  const getCategoryBreakdown = (subscriptions: any[]) => {
+    const categories: any = {};
     subscriptions.forEach(sub => {
       if (!categories[sub.category]) {
         categories[sub.category] = {
@@ -274,10 +276,10 @@ const SaaSLicenseAuditorMVP = () => {
       categories[sub.category].subscriptionCount += 1;
     });
 
-    return Object.values(categories).sort((a, b) => b.potentialSavings - a.potentialSavings);
+    return Object.values(categories).sort((a: any, b: any) => b.potentialSavings - a.potentialSavings);
   };
 
-  const getRecommendation = (wasteType, utilization, savings) => {
+  const getRecommendation = (wasteType: string, utilization: number, savings: number) => {
     if (wasteType === 'unused') {
       return savings > 1000 ? 'Immediate cancellation recommended' : 'Cancel or downgrade';
     } else if (wasteType === 'underutilized') {
@@ -286,8 +288,8 @@ const SaaSLicenseAuditorMVP = () => {
     return 'Monitor usage trends';
   };
 
-  const handleFileUpload = (event) => {
-    const files = Array.from(event.target.files);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
     const csvFiles = files.filter(file => 
       file.type === 'text/csv' || 
       file.name.toLowerCase().endsWith('.csv')
@@ -302,7 +304,7 @@ const SaaSLicenseAuditorMVP = () => {
     setError(null);
   };
 
-  const removeFile = (index) => {
+  const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -323,14 +325,14 @@ EXECUTIVE SUMMARY
 
 TOP OPTIMIZATION OPPORTUNITIES
 ${analysisData.subscriptions
-  .sort((a, b) => b.potentialSavings - a.potentialSavings)
+  .sort((a: any, b: any) => b.potentialSavings - a.potentialSavings)
   .slice(0, 10)
-  .map((sub, i) => `${i + 1}. ${sub.vendor} - $${sub.potentialSavings.toLocaleString()} potential savings`)
+  .map((sub: any, i: number) => `${i + 1}. ${sub.vendor} - $${sub.potentialSavings.toLocaleString()} potential savings`)
   .join('\n')}
 
 CATEGORY BREAKDOWN
 ${analysisData.categoryBreakdown
-  .map(cat => `${cat.category}: $${cat.totalSpend.toLocaleString()} spend, $${cat.potentialSavings.toLocaleString()} potential savings`)
+  .map((cat: any) => `${cat.category}: $${cat.totalSpend.toLocaleString()} spend, $${cat.potentialSavings.toLocaleString()} potential savings`)
   .join('\n')}
 
 Generated on ${new Date().toLocaleDateString()}
@@ -348,7 +350,7 @@ Generated on ${new Date().toLocaleDateString()}
   const filteredSubscriptions = useMemo(() => {
     if (!analysisData) return [];
     
-    return analysisData.subscriptions.filter(sub => {
+    return analysisData.subscriptions.filter((sub: any) => {
       const matchesDepartment = selectedDepartment === 'all' || sub.department === selectedDepartment;
       const matchesWasteType = selectedWasteType === 'all' || sub.wasteType === selectedWasteType;
       const matchesSearch = searchTerm === '' || 
@@ -362,7 +364,7 @@ Generated on ${new Date().toLocaleDateString()}
   const topOpportunities = useMemo(() => {
     if (!analysisData) return [];
     return analysisData.subscriptions
-      .sort((a, b) => b.potentialSavings - a.potentialSavings)
+      .sort((a: any, b: any) => b.potentialSavings - a.potentialSavings)
       .slice(0, 10);
   }, [analysisData]);
 
@@ -599,7 +601,7 @@ Generated on ${new Date().toLocaleDateString()}
                       paddingAngle={2}
                       dataKey="totalSpend"
                     >
-                      {analysisData.categoryBreakdown.map((entry, index) => (
+                      {analysisData.categoryBreakdown.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={[
                           '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', 
                           '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1'
@@ -677,7 +679,7 @@ Generated on ${new Date().toLocaleDateString()}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSubscriptions.map((subscription) => (
+                  {filteredSubscriptions.map((subscription: any) => (
                     <tr key={subscription.id} className="border-b border-slate-100 hover:bg-slate-50">
                       <td className="py-4 px-4 font-medium text-slate-800">{subscription.vendor}</td>
                       <td className="py-4 px-4">
@@ -728,13 +730,13 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="text-right">
                 <p className="text-sm text-slate-600">Total Potential Savings</p>
                 <p className="text-2xl font-bold text-green-600">
-                  ${topOpportunities.reduce((sum, opp) => sum + opp.potentialSavings, 0).toLocaleString()}
+                  ${topOpportunities.reduce((sum: number, opp: any) => sum + opp.potentialSavings, 0).toLocaleString()}
                 </p>
               </div>
             </div>
             
             <div className="space-y-4">
-              {topOpportunities.map((opportunity, index) => (
+              {topOpportunities.map((opportunity: any, index: number) => (
                 <div key={opportunity.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
@@ -784,31 +786,31 @@ Generated on ${new Date().toLocaleDateString()}
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-semibold text-red-800 mb-2">🚨 Immediate Action</h4>
                 <p className="text-red-700 text-sm">
-                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'unused').length} unused subscriptions
+                  {analysisData.subscriptions.filter((sub: any) => sub.wasteType === 'unused').length} unused subscriptions
                 </p>
                 <p className="text-red-600 font-bold">
                   ${analysisData.subscriptions
-                    .filter(sub => sub.wasteType === 'unused')
-                    .reduce((sum, sub) => sum + sub.potentialSavings, 0)
+                    .filter((sub: any) => sub.wasteType === 'unused')
+                    .reduce((sum: number, sub: any) => sum + sub.potentialSavings, 0)
                     .toLocaleString()} savings
                 </p>
               </div>
               <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                 <h4 className="font-semibold text-orange-800 mb-2">⚡ Quick Wins</h4>
                 <p className="text-orange-700 text-sm">
-                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'underutilized').length} underutilized tools
+                  {analysisData.subscriptions.filter((sub: any) => sub.wasteType === 'underutilized').length} underutilized tools
                 </p>
                 <p className="text-orange-600 font-bold">
                   ${analysisData.subscriptions
-                    .filter(sub => sub.wasteType === 'underutilized')
-                    .reduce((sum, sub) => sum + sub.potentialSavings, 0)
+                    .filter((sub: any) => sub.wasteType === 'underutilized')
+                    .reduce((sum: number, sub: any) => sum + sub.potentialSavings, 0)
                     .toLocaleString()} savings
                 </p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-800 mb-2">✅ Well Optimized</h4>
                 <p className="text-green-700 text-sm">
-                  {analysisData.subscriptions.filter(sub => sub.wasteType === 'optimized').length} efficient subscriptions
+                  {analysisData.subscriptions.filter((sub: any) => sub.wasteType === 'optimized').length} efficient subscriptions
                 </p>
                 <p className="text-green-600 font-bold">Keep monitoring</p>
               </div>
@@ -844,4 +846,6 @@ Generated on ${new Date().toLocaleDateString()}
   );
 };
 
-export default SaaSLicenseAuditorMVP;
+export default function Home() {
+  return <SaaSLicenseAuditorMVP />;
+}
